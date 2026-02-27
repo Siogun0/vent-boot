@@ -48,14 +48,12 @@ void go_to_application(void)
 
 	if(check_programm_available() == 1)
 	{
-//		HAL_CRC_MspDeInit(&hcrc);
-		__disable_irq ();
-//		deinit_perif();
+		deinit_perif();
 
 		void (*GoToApp)(void);
 		appJumpAddress = *((volatile uint32_t*)(SECTOR_0_FW + 4));
 		GoToApp = (void (*)(void))appJumpAddress;
-		SCB->VTOR = SECTOR_0_FW;
+//		SCB->VTOR = SECTOR_0_FW;
 		__set_MSP(*((volatile uint32_t*) SECTOR_0_FW)); //stack pointer (to RAM) for USER app in this address
 		GoToApp();
 	}

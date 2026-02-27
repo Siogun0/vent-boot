@@ -54,7 +54,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
 /* USER CODE BEGIN PFP */
-
+void deinit_perif(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -62,13 +62,16 @@ static void MX_CAN_Init(void);
 
 void deinit_perif(void)
 {
+	__disable_irq ();
+	SysTick->CTRL = 0;
 	HAL_CAN_DeInit(&hcan);
-//	HAL_CAN_DeactivateNotification(&hcan, 0xFFFFFFFF);
+	HAL_CAN_DeactivateNotification(&hcan, 0xFFFFFFFF);
 //	HAL_NVIC_DisableIRQ(TIM15_IRQn);
 	HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
 //	HAL_NVIC_ClearPendingIRQ(TIM15_IRQn);
 	HAL_NVIC_ClearPendingIRQ(CAN1_RX0_IRQn);
-//	HAL_RCC_DeInit();
+	HAL_NVIC_ClearPendingIRQ(SysTick_IRQn);
+	HAL_RCC_DeInit();
 }
 
 
@@ -140,6 +143,8 @@ int main(void)
   }
 
   BKP->DR1 = BOOT_MGG_CLEAR;
+
+  __enable_irq();
   /* USER CODE END 2 */
 
   /* Infinite loop */
