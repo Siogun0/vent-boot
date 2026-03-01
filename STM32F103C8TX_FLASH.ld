@@ -45,7 +45,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
   RAM       (xrw)  : ORIGIN = 0x20000000,   LENGTH = 19K
-  FLASH      (rx)  : ORIGIN = 0x8000000,    LENGTH = 16K
+  FLASH      (rx)  : ORIGIN = 0x8000000,    LENGTH = 15K
   
   CALRAM	(xrw)  : ORIGIN = 0x20004C00,   LENGTH = 1K
   CALFLASH  (rx)   : ORIGIN = 0x08003C00,   LENGTH = 1K
@@ -198,10 +198,10 @@ SECTIONS
   	*(.Calib_ram*);
   } >CALRAM
   
-  .calib_flash :
+  .calib_flash (NOLOAD):
   {
     . = ALIGN(4);
-  	*(.Calib_flash*);
+  	KEEP(*(.calib_flash_sec*));
   } >CALFLASH
   
 }

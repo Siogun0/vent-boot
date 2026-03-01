@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <common_param.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,19 +42,41 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
 
+CRC_HandleTypeDef hcrc;
+
 /* USER CODE BEGIN PV */
-uint32_t inhibit_autorun;
-uint32_t *test_p;
-uint32_t test_cnt;
+uint32_t inhibit_autorun = 0;
 uint16_t config_number = 0;
+uint32_t xcp_base_id = XCP_BASE_ID;
+common_param_t param = {};
+
+volatile const __attribute__((section(".calib_flash_sec"))) common_param_t param_flash;
+
+const common_param_t param_def =
+{
+	.crc = 0,
+	.size = COMMON_PARAM_SIZE,
+	.xcp_canid_rx = XCP_BASE_ID,
+	.xcp_canid_tx = XCP_BASE_ID + 1,
+	.uds_canid_rx = 0,
+	.uds_canid_func = 0,
+	.uds_canid_tx = 0,
+	.ip_mac = {},
+	.ip_v4 = {},
+	.ip_port_xcp = 0,
+	.id = 0
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 void deinit_perif(void);
+void try_read_xcp_id(void);
+void load_param(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -127,17 +149,22 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
 
   can_platform_init();
-  xcp_can_init(0, 0, XCP_BASE_ID + config_number * 2);
+
+  load_param();
+  try_read_xcp_id();
+
+  xcp_can_init(0, 0, xcp_base_id);
 
   PWR->CR |= PWR_CR_DBP;
   if(BKP->DR1 == BOOT_MSG_XCP_REQ)
   {
   	inhibit_autorun = 1;
   	CAN_RxHeaderTypeDef CAN_RxHeader;
-  	CAN_RxHeader.StdId = XCP_BASE_ID + config_number * 2;
+  	CAN_RxHeader.StdId = xcp_base_id;
   	uint8_t data[8] = {0xD2, 0, 0, 0, 0, 0, 0, 0};
   	can_platform_msg_recieve(&CAN_RxHeader, data);
   }
@@ -254,6 +281,32 @@ static void MX_CAN_Init(void)
 }
 
 /**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -287,7 +340,39 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void try_read_xcp_id(void)
+{
+	if(param.xcp_canid_tx == param.xcp_canid_rx + 1 && param.xcp_canid_rx != 0xFFFFFFFF)
+	{
+		xcp_base_id = param.xcp_canid_rx;
+	}
+	else
+	{
+		xcp_base_id += config_number * 2;
+	}
+}
 
+void load_param(void)
+{
+	uint32_t crc = 0;
+
+	// Load defaul params
+	memcpy(&param, &param_def, param_def.size);
+
+	//Check saved params and load
+	if(param_flash.size <= (SECTORS_FOR_PARAM * SECTOR_SIZE) && (param_flash.size != 0) && (param_flash.size % 4 == 0))
+	{
+		crc = HAL_CRC_Calculate(&hcrc, (uint32_t*)&param_flash.size, param_flash.size / 4 - 1);
+		if(param_flash.crc == crc)
+		{
+			memcpy(&param, (const void *)&param_flash, param_flash.size);
+		}
+	}
+
+	//Recalc CRC
+	crc = HAL_CRC_Calculate(&hcrc, (uint32_t*)&param.size, param.size / 4 - 1);
+	param.crc = crc;
+}
 /* USER CODE END 4 */
 
 /**

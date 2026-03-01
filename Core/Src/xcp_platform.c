@@ -21,7 +21,7 @@ uint8_t check_programm_available(void)
 	uint32_t* firmware_first_word;
 	uint32_t* calibr_first_word;
 	firmware_first_word = (uint32_t*)SECTOR_0_FW;
-	calibr_first_word = (uint32_t*)SECTOR_CALIB;
+	calibr_first_word = (uint32_t*)SECTOR_PARAM;
 
 	if(firmware_first_word[0] == 0xFFFFFFFF || firmware_first_word[0] == 0x00000000 ||
 			firmware_first_word[1] == 0xFFFFFFFF || firmware_first_word[1] == 0x000000000)// ||
@@ -35,7 +35,7 @@ uint8_t check_programm_available(void)
 
 size_t flash_range_check(uint32_t mta, uint32_t range)
 {
-	if((mta < SECTOR_0_FW || (mta + range) > (SECTOR_0_FW + SECTORS_FOR_FW * SECTOR_SIZE)) && (mta < SECTOR_CALIB || (mta + range) > (SECTOR_CALIB + SECTOR_SIZE)))
+	if((mta < SECTOR_0_FW || (mta + range) > (SECTOR_0_FW + SECTORS_FOR_FW * SECTOR_SIZE)) && (mta < SECTOR_PARAM || (mta + range) > (SECTOR_PARAM + SECTOR_SIZE)))
 	{
 		return 0;
 	}
