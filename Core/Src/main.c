@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <common_param.h>
+#include <weak_common_param.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
